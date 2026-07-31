@@ -1,0 +1,39 @@
+# Local datasets
+data/raw/
+data/processed/*
+!data/processed/.gitkeep
+
+# Generated indexes and embeddings
+indexes/
+embeddings/
+cache/
+*.faiss
+*.index
+*.npy
+*.npz
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+__MACOSX/
+.AppleDouble
+.LSOverride
+
+# IDE
+.idea/
+.vscode/
+
+# Logs and temporary files
+*.log
+*.tmp
