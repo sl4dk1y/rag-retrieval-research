@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import importlib.metadata
 import os
+import resource
 import shutil
 import sys
 import time
@@ -39,16 +40,29 @@ from data_utils import (
 BM25_METHOD = "lucene"
 BM25_K1 = 1.2
 BM25_B = 0.75
-def read_corpus(corpus_path: Path) -> tuple[list[str], list[str], float, float]:
+
+
+def peak_rss_bytes() -> int:
+    """Return peak resident memory usage for this process in bytes."""
+    value = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    # macOS reports bytes; Linux reports KiB.
+    return int(value if sys.platform == "darwin" else value * 1024)
+
+
+def read_corpus(
+    corpus_path: Path, *, max_docs: int | None = None
+) -> tuple[list[str], list[str], float, float]:
     """Stream corpus records into the two arrays required for indexing."""
     texts: list[str] = []
     docids: list[str] = []
-    relevant_docids_not_seen = referenced_relevant_docids()
+    relevant_docids_not_seen = referenced_relevant_docids() if max_docs is None else None
     start = time.perf_counter()
 
     for record_number, record in enumerate(
         iter_jsonl_gz(corpus_path, description="Чтение корпуса"), start=1
     ):
+        if max_docs is not None and record_number > max_docs:
+            break
         try:
             doc_id = record["docid"]
             title = record["title"]
@@ -67,7 +81,8 @@ def read_corpus(corpus_path: Path) -> tuple[list[str], list[str], float, float]:
             )
         docids.append(doc_id)
         texts.append(title + " " + text)
-        relevant_docids_not_seen.discard(doc_id)
+        if relevant_docids_not_seen is not None:
+            relevant_docids_not_seen.discard(doc_id)
 
     read_seconds = time.perf_counter() - start
     if not docids:
@@ -103,10 +118,16 @@ def build_index(
     corpus_path: Path = CORPUS_PATH,
     index_dir: Path = INDEX_DIR,
     force: bool = False,
+    max_docs: int | None = None,
 ) -> dict[str, Any]:
     """Build an index atomically, or reuse a completed one."""
     require_python_311()
     require_file(corpus_path, "корпус")
+    if max_docs is not None and max_docs <= 0:
+        raise ValueError("--max-docs должен быть положительным целым числом")
+    if max_docs is not None and index_dir == INDEX_DIR:
+        index_dir = INDEX_DIR.parent / f"bm25-smoke-{max_docs}"
+        print(f"Smoke-test: индекс будет сохранён отдельно в {index_dir}")
     if index_is_complete(index_dir) and not force:
         require_complete_index(index_dir)
         print(f"BM25-индекс уже существует: {index_dir}")
@@ -130,7 +151,7 @@ def build_index(
 
     total_start = time.perf_counter()
     texts, docids, corpus_read_seconds, docid_validation_seconds = read_corpus(
-        corpus_path
+        corpus_path, max_docs=max_docs
     )
     print(f"Прочитано документов: {len(docids):,}")
 
@@ -179,6 +200,7 @@ def build_index(
             "index_build_seconds": index_build_seconds,
             "index_save_seconds": index_save_seconds,
             "index_total_seconds": time.perf_counter() - total_start,
+            "peak_rss_bytes": peak_rss_bytes(),
         }
         metadata: dict[str, Any] = {
             "analyzer_version": ANALYZER_VERSION,
@@ -187,6 +209,8 @@ def build_index(
             "corpus_size_bytes": corpus_path.stat().st_size,
             "document_count": len(docids),
             "format_version": 1,
+            "is_subset": max_docs is not None,
+            "max_docs": max_docs,
             "packages": {
                 "PyStemmer": importlib.metadata.version("PyStemmer"),
                 "bm25s": importlib.metadata.version("bm25s"),
@@ -225,6 +249,7 @@ def build_index(
     print(f"Чтение корпуса:     {corpus_read_seconds:.2f} с")
     print(f"Токенизация:        {corpus_tokenization_seconds:.2f} с")
     print(f"Построение индекса: {index_build_seconds:.2f} с")
+    print(f"Пиковое использование RAM (RSS): {peak_rss_bytes() / 1024**3:.2f} GiB")
     return build_timing
 
 
@@ -233,12 +258,21 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--force", action="store_true", help="перестроить уже существующий индекс"
     )
+    parser.add_argument(
+        "--max-docs",
+        type=int,
+        default=None,
+        help=(
+            "ограничить число документов для диагностического smoke-test; "
+            "индекс сохраняется отдельно и не используется для финальной оценки"
+        ),
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    build_index(force=args.force)
+    build_index(force=args.force, max_docs=args.max_docs)
 
 
 if __name__ == "__main__":
