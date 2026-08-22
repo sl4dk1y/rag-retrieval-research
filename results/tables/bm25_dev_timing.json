@@ -1,0 +1,21 @@
+{
+  "average_query_processing_seconds": 0.06910889172727051,
+  "average_query_seconds": 0.06910463187854408,
+  "corpus_read_seconds": 29.213080166999134,
+  "corpus_tokenization_seconds": 135.37502825000047,
+  "docid_validation_seconds": 0.6440264169978036,
+  "document_count": 9597504,
+  "effective_top_k": 100,
+  "experiment_total_seconds": 105.0800838340001,
+  "index_build_seconds": 141.0943190830003,
+  "index_load_seconds": 1.2992110000013781,
+  "index_save_seconds": 8.985653792002267,
+  "index_total_seconds": 323.62525429200105,
+  "peak_rss_bytes": 9231630336,
+  "query_count": 1375,
+  "query_processing_seconds": 95.02472612499696,
+  "query_retrieval_seconds": 95.01886883299812,
+  "query_tokenization_seconds": 0.005857291998836445,
+  "requested_top_k": 100,
+  "split": "dev"
+}
