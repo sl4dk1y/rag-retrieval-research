@@ -11,6 +11,9 @@ cache/
 *.index
 *.npy
 *.npz
+patches/
+*.patch
+
 
 # Python
 __pycache__/
@@ -29,6 +32,7 @@ env/
 __MACOSX/
 .AppleDouble
 .LSOverride
+*.zip
 
 # IDE
 .idea/
