@@ -1,0 +1,12 @@
+{
+  "metrics": {
+    "MRR@10": 0.5030562770562768,
+    "Recall@1": 0.38036363636363635,
+    "Recall@10": 0.744,
+    "Recall@5": 0.6705454545454546,
+    "nDCG@10": 0.5614689661635603
+  },
+  "query_count": 1375,
+  "run": "/Users/a1111/Yandex.Disk.localized/_work/работа/research/rag-retrieval-research/results/runs/dense_e5_small_dev.trec",
+  "split": "dev"
+}

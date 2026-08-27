@@ -1,4 +1,4 @@
-"""Evaluate a TREC BM25 run with dependency-free IR metrics."""
+"""Evaluate a TREC retrieval run with dependency-free IR metrics."""
 
 from __future__ import annotations
 
@@ -9,14 +9,10 @@ from pathlib import Path
 from typing import Any
 
 from data_utils import (
-    DOCIDS_FILENAME,
-    INDEX_DIR,
     SUPPORTED_SPLITS,
-    TABLES_DIR,
     DataFormatError,
     load_qrels,
     load_topics,
-    require_complete_index,
     require_file,
     require_python_311,
     validate_referenced_docids,
@@ -151,18 +147,19 @@ def calculate_metrics(
 
 def evaluate(
     *,
-    split: str = "dev",
-    run_path: Path | None = None,
-    metrics_path: Path | None = None,
-    index_dir: Path = INDEX_DIR,
+    split: str,
+    run_path: Path,
+    docids_path: Path,
+    metrics_path: Path,
 ) -> dict[str, Any]:
     """Validate run/qrels consistency, calculate metrics, and save JSON."""
     require_python_311()
-    require_complete_index(index_dir)
+    require_file(run_path, "TREC run")
+    require_file(docids_path, "docid mapping")
+
     topics_path, qrels_path = validate_split_files(split)
     topics = load_topics(topics_path)
     qrels = load_qrels(qrels_path)
-    run_path = run_path or default_run_path(split)
     run = load_trec_run(run_path)
 
     query_ids = [query_id for query_id, _query in topics]
@@ -170,6 +167,7 @@ def evaluate(
     missing_qrels = topic_query_ids - set(qrels)
     missing_run = topic_query_ids - set(run)
     extra_run = set(run) - topic_query_ids
+
     if missing_qrels:
         raise DataFormatError(
             f"Qrels отсутствуют для {len(missing_qrels):,} запросов split={split}"
@@ -189,7 +187,7 @@ def evaluate(
     referenced_docids.update(
         doc_id for query_rows in run.values() for doc_id, _score in query_rows
     )
-    validate_referenced_docids(index_dir / DOCIDS_FILENAME, referenced_docids)
+    validate_referenced_docids(docids_path, referenced_docids)
 
     metrics = calculate_metrics(query_ids, qrels, run)
     result: dict[str, Any] = {
@@ -198,8 +196,9 @@ def evaluate(
         "run": str(run_path.resolve()),
         "split": split,
     }
-    metrics_path = metrics_path or default_metrics_path(split)
+
     write_json(metrics_path, result)
+
     print(f"Метрики для split={split} ({len(query_ids):,} запросов):")
     for name, value in metrics.items():
         print(f"  {name:<10} {value:.6f}")
@@ -211,14 +210,34 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--split", choices=SUPPORTED_SPLITS, default="dev")
     parser.add_argument(
-        "--run", type=Path, default=None, help="TREC run; по умолчанию bm25_<split>.trec"
+        "--run",
+        type=Path,
+        required=True,
+        help="TREC run для оценки",
+    )
+    parser.add_argument(
+        "--docids",
+        type=Path,
+        required=True,
+        help="docid mapping соответствующего retrieval-индекса",
+    )
+    parser.add_argument(
+        "--metrics-output",
+        type=Path,
+        required=True,
+        help="путь для JSON-файла с рассчитанными метриками",
     )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    evaluate(split=args.split, run_path=args.run)
+    evaluate(
+        split=args.split,
+        run_path=args.run,
+        docids_path=args.docids,
+        metrics_path=args.metrics_output,
+    )
 
 
 if __name__ == "__main__":

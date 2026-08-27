@@ -1,0 +1,13 @@
+{
+  "split": "dev",
+  "query_count": 1375,
+  "top_k": 100,
+  "nprobe": 256,
+  "model": "intfloat/multilingual-e5-small",
+  "device": "mps",
+  "index_load_seconds": 1.3867275419997895,
+  "model_load_seconds": 7.824117166999713,
+  "query_encode_seconds": 1.8487466250007856,
+  "search_seconds": 46.25148437500138,
+  "average_search_seconds_per_query": 0.03363744318181919
+}
