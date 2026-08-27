@@ -1,0 +1,9 @@
+section,name,count,share
+category_counts,all_fail,146,0.14673366834170853
+category_counts,all_success,373,0.3748743718592965
+category_counts,bm25_success_dense_fail,20,0.020100502512562814
+category_counts,dense_success_bm25_fail,455,0.457286432160804
+category_counts,dense_success_hybrid_fail,1,0.0010050251256281408
+dense_vs_hybrid,dense_better_than_hybrid,48,0.04824120603015075
+dense_vs_hybrid,dense_hybrid_equal,889,0.893467336683417
+dense_vs_hybrid,hybrid_better_than_dense,58,0.05829145728643216

@@ -1,0 +1,227 @@
+{
+  "protocol": {
+    "dataset": "Mr. TyDi Russian",
+    "corpus_documents": 9597504,
+    "dev_used_for_parameter_selection": true,
+    "test_used_for_parameter_tuning": false,
+    "final_test_queries": 995
+  },
+  "frozen_configurations": {
+    "bm25": {
+      "variant": "Lucene BM25",
+      "k1": 1.2,
+      "b": 0.75,
+      "top_k": 100
+    },
+    "dense": {
+      "model": "intfloat/multilingual-e5-small",
+      "embedding_dimension": 384,
+      "faiss": "IVFScalarQuantizer(SQ8, inner-product)",
+      "nlist": 2048,
+      "nprobe": 256,
+      "top_k": 100
+    },
+    "hybrid": {
+      "method": "weighted Reciprocal Rank Fusion",
+      "rrf_k": 60,
+      "bm25_weight": 0.025,
+      "dense_weight": 1.0,
+      "dense_nprobe": 256,
+      "top_k": 100
+    }
+  },
+  "dev_comparison": {
+    "BM25": {
+      "Recall@1": 0.11054545454545454,
+      "Recall@5": 0.22472727272727272,
+      "Recall@10": 0.2778181818181818,
+      "MRR@10": 0.15876305916305902,
+      "nDCG@10": 0.18696557696956892
+    },
+    "Dense E5 (nprobe=256)": {
+      "Recall@1": 0.39490909090909093,
+      "Recall@5": 0.7018181818181818,
+      "Recall@10": 0.7847272727272727,
+      "MRR@10": 0.5256632034632032,
+      "nDCG@10": 0.5883764877893177
+    },
+    "Hybrid RRF (BM25 weight=0.025)": {
+      "Recall@1": 0.3927272727272727,
+      "Recall@5": 0.704,
+      "Recall@10": 0.7876363636363637,
+      "MRR@10": 0.5237396825396826,
+      "nDCG@10": 0.5875435825416029
+    }
+  },
+  "test_comparison": {
+    "BM25": {
+      "Recall@1": 0.1641541038525963,
+      "Recall@5": 0.29664991624790615,
+      "Recall@10": 0.36482412060301506,
+      "MRR@10": 0.23939020499322003,
+      "nDCG@10": 0.26087168923903864
+    },
+    "Dense E5 (nprobe=256)": {
+      "Recall@1": 0.434003350083752,
+      "Recall@5": 0.741038525963149,
+      "Recall@10": 0.8105527638190955,
+      "MRR@10": 0.59667903007099,
+      "nDCG@10": 0.6391822718642027
+    },
+    "Hybrid RRF (BM25 weight=0.025)": {
+      "Recall@1": 0.4341708542713567,
+      "Recall@5": 0.7360134003350084,
+      "Recall@10": 0.8095477386934673,
+      "MRR@10": 0.5974411741245912,
+      "nDCG@10": 0.6396263961607521
+    }
+  },
+  "dense_nprobe_ablation": [
+    {
+      "nprobe": 64,
+      "Recall@1": 0.38036363636363635,
+      "Recall@5": 0.6705454545454546,
+      "Recall@10": 0.744,
+      "MRR@10": 0.5030562770562768,
+      "nDCG@10": 0.5614689661635603
+    },
+    {
+      "nprobe": 128,
+      "Recall@1": 0.38836363636363636,
+      "Recall@5": 0.688,
+      "Recall@10": 0.7716363636363637,
+      "MRR@10": 0.5168227994227991,
+      "nDCG@10": 0.5784979054023821
+    },
+    {
+      "nprobe": 256,
+      "Recall@1": 0.39490909090909093,
+      "Recall@5": 0.7018181818181818,
+      "Recall@10": 0.7847272727272727,
+      "MRR@10": 0.5256632034632032,
+      "nDCG@10": 0.5883764877893177
+    },
+    {
+      "nprobe": 512,
+      "Recall@1": 0.40145454545454545,
+      "Recall@5": 0.7134545454545455,
+      "Recall@10": 0.7963636363636364,
+      "MRR@10": 0.5339884559884558,
+      "nDCG@10": 0.5975157774938448
+    }
+  ],
+  "hybrid_weight_ablation": [
+    {
+      "bm25_weight": 1.0,
+      "dense_weight": 1.0,
+      "rrf_k": 60,
+      "Recall@1": 0.23418181818181819,
+      "Recall@5": 0.4829090909090909,
+      "Recall@10": 0.6232727272727273,
+      "MRR@10": 0.342750649350649,
+      "nDCG@10": 0.4088333606689739
+    },
+    {
+      "bm25_weight": 0.5,
+      "dense_weight": 1.0,
+      "rrf_k": 60,
+      "Recall@1": 0.27636363636363637,
+      "Recall@5": 0.5701818181818182,
+      "Recall@10": 0.7214545454545455,
+      "MRR@10": 0.40261038961038925,
+      "nDCG@10": 0.47810948909474293
+    },
+    {
+      "bm25_weight": 0.25,
+      "dense_weight": 1.0,
+      "rrf_k": 60,
+      "Recall@1": 0.3098181818181818,
+      "Recall@5": 0.6421818181818182,
+      "Recall@10": 0.7672727272727272,
+      "MRR@10": 0.4488118326118326,
+      "nDCG@10": 0.5249997402490103
+    },
+    {
+      "bm25_weight": 0.1,
+      "dense_weight": 1.0,
+      "rrf_k": 60,
+      "Recall@1": 0.3512727272727273,
+      "Recall@5": 0.6916363636363636,
+      "Recall@10": 0.7825454545454545,
+      "MRR@10": 0.49337287157287185,
+      "nDCG@10": 0.5633250524752593
+    },
+    {
+      "bm25_weight": 0.05,
+      "dense_weight": 1.0,
+      "rrf_k": 60,
+      "Recall@1": 0.37745454545454543,
+      "Recall@5": 0.6989090909090909,
+      "Recall@10": 0.7861818181818182,
+      "MRR@10": 0.5134989898989902,
+      "nDCG@10": 0.5795537972529112
+    },
+    {
+      "bm25_weight": 0.025,
+      "dense_weight": 1.0,
+      "rrf_k": 60,
+      "Recall@1": 0.3927272727272727,
+      "Recall@5": 0.704,
+      "Recall@10": 0.7876363636363637,
+      "MRR@10": 0.5237396825396826,
+      "nDCG@10": 0.5875435825416029
+    },
+    {
+      "bm25_weight": 0.01,
+      "dense_weight": 1.0,
+      "rrf_k": 60,
+      "Recall@1": 0.39490909090909093,
+      "Recall@5": 0.7018181818181818,
+      "Recall@10": 0.7847272727272727,
+      "MRR@10": 0.5256632034632032,
+      "nDCG@10": 0.5883764877893177
+    }
+  ],
+  "latency": [
+    {
+      "method": "BM25",
+      "split": "test",
+      "query_count": 995,
+      "query_encoding_seconds": "",
+      "search_seconds": 46.06711462500243,
+      "average_search_ms_per_query": 46.29860766331903
+    },
+    {
+      "method": "Dense E5 (nprobe=256)",
+      "split": "test",
+      "query_count": 995,
+      "query_encoding_seconds": 2.3361469579976983,
+      "search_seconds": 35.75416250000126,
+      "average_search_ms_per_query": 35.93383165829272
+    }
+  ],
+  "error_analysis": {
+    "query_count": 995,
+    "cutoff": 10,
+    "category_counts": {
+      "all_fail": 146,
+      "all_success": 373,
+      "bm25_success_dense_fail": 20,
+      "dense_success_bm25_fail": 455,
+      "dense_success_hybrid_fail": 1
+    },
+    "dense_vs_hybrid": {
+      "dense_better_than_hybrid": 48,
+      "dense_hybrid_equal": 889,
+      "hybrid_better_than_dense": 58
+    }
+  },
+  "artifacts": {
+    "test_comparison_csv": "results/final/test_comparison.csv",
+    "dev_comparison_csv": "results/final/dev_comparison.csv",
+    "dense_nprobe_ablation_csv": "results/final/dense_nprobe_ablation.csv",
+    "hybrid_weight_ablation_csv": "results/final/hybrid_weight_ablation.csv",
+    "latency_summary_csv": "results/final/latency_summary.csv",
+    "error_analysis_summary_csv": "results/final/error_analysis_summary.csv"
+  }
+}
