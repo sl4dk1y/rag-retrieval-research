@@ -1,0 +1,3 @@
+method,split,query_count,query_encoding_seconds,search_seconds,average_search_ms_per_query
+BM25,test,995,,46.06711462500243,46.29860766331903
+Dense E5 (nprobe=256),test,995,2.3361469579976983,35.75416250000126,35.93383165829272
