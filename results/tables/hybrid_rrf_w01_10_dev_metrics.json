@@ -1,0 +1,12 @@
+{
+  "metrics": {
+    "MRR@10": 0.49337287157287185,
+    "Recall@1": 0.3512727272727273,
+    "Recall@10": 0.7825454545454545,
+    "Recall@5": 0.6916363636363636,
+    "nDCG@10": 0.5633250524752593
+  },
+  "query_count": 1375,
+  "run": "results/runs/hybrid_rrf_w01_10_dev.trec",
+  "split": "dev"
+}
