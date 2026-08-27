@@ -8,15 +8,17 @@ import time
 
 from build_bm25_index import build_index
 from data_utils import (
+    DOCIDS_FILENAME,
     INDEX_DIR,
     SUPPORTED_SPLITS,
+    TABLES_DIR,
     DataFormatError,
     index_is_complete,
     require_complete_index,
     require_python_311,
 )
 from evaluate_run import evaluate
-from run_bm25 import run_search
+from run_bm25 import default_run_path, run_search
 
 
 def run_experiment(*, split: str = "dev", top_k: int = 100) -> None:
@@ -40,7 +42,12 @@ def run_experiment(*, split: str = "dev", top_k: int = 100) -> None:
         print(f"Используется существующий индекс: {INDEX_DIR}")
 
     timing = run_search(split=split, top_k=top_k)
-    evaluation = evaluate(split=split)
+    evaluation = evaluate(
+        split=split,
+        run_path=default_run_path(split),
+        docids_path=INDEX_DIR / DOCIDS_FILENAME,
+        metrics_path=TABLES_DIR / f"bm25_{split}_metrics.json",
+    )
     elapsed = time.perf_counter() - experiment_start
 
     print("\nИтоговая сводка")

@@ -1,0 +1,18 @@
+{
+  "model": "intfloat/multilingual-e5-small",
+  "device": "mps",
+  "max_docs": 10000,
+  "processed_docs": 10000,
+  "batch_size": 8,
+  "embedding_dimension": 384,
+  "model_load_seconds": 7.466299084000639,
+  "encoding_seconds": 86.47003123797185,
+  "total_seconds": 94.19827479099695,
+  "documents_per_second": 115.64700343959942,
+  "estimated_full_corpus_seconds": 82989.64706865598,
+  "estimated_full_corpus_hours": 23.05267974129333,
+  "peak_rss_bytes": 2414428160,
+  "peak_rss_gib": 2.2486114501953125,
+  "torch_version": "2.13.0",
+  "mps_available": true
+}
