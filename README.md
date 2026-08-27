@@ -6,69 +6,22 @@
 
 - **BM25** — классический разреженный лексический поиск;
 - **Dense Retrieval** — семантический поиск на `intfloat/multilingual-e5-small` + FAISS;
+- **Hybrid Retrieval** — объединение BM25 и Dense Retrieval методом weighted Reciprocal Rank Fusion (RRF);
 - единая оценка retrieval-методов по Recall, MRR и nDCG;
-- эксперименты с параметром `nprobe` для Dense Retrieval.
+- эксперименты с параметром `nprobe`;
+- ablation по весу BM25 в Hybrid Retrieval.
 
-Следующий этап — **Hybrid Retrieval** с объединением BM25 и Dense Retrieval через Reciprocal Rank Fusion (RRF).
-
-## Требования
-
-- Python 3.11+;
-- локальные файлы русскоязычной части Mr. TyDi;
-- достаточно RAM и свободного места для индексов;
-- на Apple Silicon Dense Retrieval использует PyTorch MPS.
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+Основной экспериментальный этап на `dev` завершён.
 
 ## Данные
 
-```text
-data/raw/mr-tydi-russian/
-├── corpus.jsonl.gz
-├── train.jsonl.gz
-├── dev.jsonl.gz
-├── test.jsonl.gz
-└── ir-format-data/
-    ├── topics.train.txt
-    ├── topics.dev.txt
-    ├── topics.test.txt
-    ├── qrels.train.txt
-    ├── qrels.dev.txt
-    └── qrels.test.txt
-```
-
-`data/raw/` игнорируется Git. Полный русскоязычный корпус содержит **9 597 504 документа**.
+Полный русскоязычный корпус Mr. TyDi содержит **9 597 504 документа**. `data/raw/` и локальные индексы не публикуются в Git.
 
 ## BM25 baseline
 
-Конфигурация:
+Конфигурация: `bm25s`, Lucene BM25, `k1=1.2`, `b=0.75`, русский Snowball stemmer, документ `title + " " + text`.
 
-- `bm25s`;
-- Lucene BM25;
-- `k1 = 1.2`;
-- `b = 0.75`;
-- русский Snowball stemmer;
-- стоп-слова не удаляются;
-- индексируется `title + " " + text`.
-
-Запуск:
-
-```bash
-python src/build_bm25_index.py
-python src/run_bm25.py --split dev --top-k 100
-```
-
-Оценка:
-
-```bash
-python src/evaluate_run.py   --split dev   --run results/runs/bm25_dev.trec   --docids indexes/bm25/docids.txt   --metrics-output results/tables/bm25_dev_metrics.json
-```
-
-Результаты BM25 на `dev`:
+Результаты на `dev`:
 
 | Метрика | Значение |
 | --- | ---: |
@@ -80,48 +33,22 @@ python src/evaluate_run.py   --split dev   --run results/runs/bm25_dev.trec   --
 
 ## Dense Retrieval
 
-Основная модель:
+Основная модель: `intfloat/multilingual-e5-small`.
 
-```text
-intfloat/multilingual-e5-small
-```
-
-Конфигурация:
+Параметры:
 
 - embedding dimension: **384**;
 - документы: `passage: <title> <text>`;
 - запросы: `query: <text>`;
-- embeddings нормализуются;
-- FAISS `IVFScalarQuantizer`;
-- SQ8;
-- inner product;
-- `nlist = 2048`;
-- обучение FAISS на 100 000 документах;
-- batch size: **8**;
-- полный индекс: около **3.5 GB**;
-- mapping `docids.txt`: около **91 MB**;
-- peak RSS при построении: около **3.74 GiB**;
-- скорость кодирования полного корпуса: **92.64 docs/s**.
+- FAISS `IVFScalarQuantizer`, SQ8, inner product;
+- `nlist=2048`;
+- train docs: 100 000;
+- batch size: 8;
+- полный индекс: около 3.5 GB;
+- скорость кодирования полного корпуса: 92.64 docs/s;
+- peak RSS: около 3.74 GiB.
 
-Полный индекс хранится локально в:
-
-```text
-indexes/dense-e5-small/
-```
-
-Построение:
-
-```bash
-python src/build_dense_index.py   --train-docs 100000   --nlist 2048   --batch-size 8
-```
-
-Поиск:
-
-```bash
-python src/run_dense.py   --split dev   --top-k 100   --nprobe 256
-```
-
-## Dense nprobe experiments
+### Dense nprobe ablation
 
 | nprobe | Recall@1 | Recall@5 | Recall@10 | MRR@10 | nDCG@10 |
 | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -130,61 +57,53 @@ python src/run_dense.py   --split dev   --top-k 100   --nprobe 256
 | 256 | 0.394909 | 0.701818 | 0.784727 | 0.525663 | 0.588376 |
 | 512 | 0.401455 | 0.713455 | 0.796364 | 0.533988 | 0.597516 |
 
-`nprobe=512` даёт максимальное качество из протестированных конфигураций. Для дальнейших экспериментов **`nprobe=256` используется как основной компромисс между качеством и вычислительной стоимостью**.
+Для Hybrid используется `nprobe=256` как заранее выбранный компромисс между качеством и вычислительной стоимостью.
 
-## Текущее сравнение
+## Hybrid Retrieval
+
+Weighted RRF:
+
+```text
+score(d) =
+w_BM25 / (k + rank_BM25(d))
++
+w_Dense / (k + rank_Dense(d))
+```
+
+Постоянные параметры: `k=60`, BM25 top-100, Dense top-100, Dense `nprobe=256`, `w_Dense=1.0`.
+
+### Hybrid weight ablation
+
+| BM25 weight | Recall@1 | Recall@5 | Recall@10 | MRR@10 | nDCG@10 |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 1.000 | 0.234182 | 0.482909 | 0.623273 | 0.342751 | 0.408833 |
+| 0.500 | 0.276364 | 0.570182 | 0.721455 | 0.402610 | 0.478109 |
+| 0.250 | 0.309818 | 0.642182 | 0.767273 | 0.448831 | 0.524996 |
+| 0.100 | 0.351273 | 0.691636 | 0.782545 | 0.493431 | 0.563325 |
+| 0.050 | 0.377455 | 0.698909 | 0.786182 | 0.513499 | 0.579554 |
+| 0.025 | 0.392727 | **0.704000** | **0.787636** | 0.523740 | 0.587544 |
+| 0.010 | **0.394909** | 0.701818 | 0.784727 | **0.525663** | **0.588376** |
+
+При `w_BM25=0.025` Hybrid немного повышает Recall@5 и Recall@10 относительно Dense `nprobe=256`, но немного уступает ему по Recall@1, MRR@10 и nDCG@10. При `w_BM25=0.01` Hybrid практически совпадает с Dense Retrieval.
+
+## Итоговое сравнение на dev
 
 | Метод | Recall@1 | Recall@5 | Recall@10 | MRR@10 | nDCG@10 |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | BM25 | 0.110545 | 0.224727 | 0.277818 | 0.158763 | 0.186966 |
-| Dense E5, nprobe=256 | 0.394909 | 0.701818 | 0.784727 | 0.525663 | 0.588376 |
-| Dense E5, nprobe=512 | 0.401455 | 0.713455 | 0.796364 | 0.533988 | 0.597516 |
+| Dense E5, nprobe=256 | **0.394909** | 0.701818 | 0.784727 | **0.525663** | **0.588376** |
+| Hybrid RRF, w_BM25=0.025 | 0.392727 | **0.704000** | **0.787636** | 0.523740 | 0.587544 |
 
-Dense Retrieval существенно превосходит текущий BM25 baseline по всем основным метрикам на `dev`.
+Вывод: Dense Retrieval значительно превосходит BM25. Weighted Hybrid Retrieval может немного увеличить полноту top-5/top-10, но в проведённых экспериментах не превосходит Dense по MRR@10 и nDCG@10.
 
-## Hybrid Retrieval — следующий этап
+## Статус
 
-План:
+Эксперименты BM25, Dense Retrieval и Hybrid Retrieval на `dev` завершены.
 
-```text
-BM25 ranking
-      +
-Dense E5 ranking
-      ↓
-Reciprocal Rank Fusion (RRF)
-      ↓
-Hybrid ranking
-```
+Следующие этапы:
 
-Hybrid Retrieval не требует повторного построения индексов. Он будет объединять уже сохранённые TREC run-файлы BM25 и Dense.
-
-## Метрики
-
-Во всех основных экспериментах используются:
-
-- Recall@1;
-- Recall@5;
-- Recall@10;
-- MRR@10;
-- nDCG@10;
-- время поиска.
-
-`src/evaluate_run.py` является общим evaluator и не привязан к конкретному retrieval-методу.
-
-## Структура кода
-
-```text
-src/
-├── inspect_dataset.py
-├── data_utils.py
-├── build_bm25_index.py
-├── run_bm25.py
-├── run_bm25_experiment.py
-├── benchmark_dense.py
-├── dense_utils.py
-├── build_dense_index.py
-├── run_dense.py
-└── evaluate_run.py
-```
-
-Текущий активный этап: **Hybrid Retrieval (RRF)**.
+1. зафиксировать финальные конфигурации;
+2. выполнить независимую оценку на `test`;
+3. провести анализ ошибок;
+4. подготовить таблицы и графики;
+5. написать и оформить статью.
