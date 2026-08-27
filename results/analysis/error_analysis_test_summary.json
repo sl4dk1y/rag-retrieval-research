@@ -1,0 +1,22 @@
+{
+  "split": "test",
+  "query_count": 995,
+  "cutoff": 10,
+  "category_counts": {
+    "all_fail": 146,
+    "all_success": 373,
+    "bm25_success_dense_fail": 20,
+    "dense_success_bm25_fail": 455,
+    "dense_success_hybrid_fail": 1
+  },
+  "dense_vs_hybrid": {
+    "dense_better_than_hybrid": 48,
+    "dense_hybrid_equal": 889,
+    "hybrid_better_than_dense": 58
+  },
+  "runs": {
+    "bm25": "results/runs/bm25_test.trec",
+    "dense": "results/runs/dense_e5_small_test_nprobe256.trec",
+    "hybrid": "results/runs/hybrid_rrf_w0025_10_test.trec"
+  }
+}
