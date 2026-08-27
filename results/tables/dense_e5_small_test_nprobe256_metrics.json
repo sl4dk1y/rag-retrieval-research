@@ -7,6 +7,6 @@
     "nDCG@10": 0.6391822718642027
   },
   "query_count": 995,
-  "run": "results/runs/dense_e5_small_test.trec",
+  "run": "results/runs/dense_e5_small_test_nprobe256.trec",
   "split": "test"
 }
