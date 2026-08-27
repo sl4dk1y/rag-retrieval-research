@@ -193,7 +193,7 @@ def evaluate(
     result: dict[str, Any] = {
         "metrics": metrics,
         "query_count": len(query_ids),
-        "run": str(run_path.resolve()),
+        "run": str(run_path),
         "split": split,
     }
 
