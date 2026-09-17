@@ -138,6 +138,39 @@ Mr. TyDi Russian:
 
 На этих samples нельзя делать выводы о retrieval quality.
 
+### Stage A result
+
+Feasibility benchmark выполнен на 10,000 документах Mr. TyDi Russian.
+
+Проверенная конфигурация:
+
+- model: `BAAI/bge-m3`;
+- dense retrieval mode;
+- device: Apple M4 / MPS;
+- embedding dimension: 1024;
+- document embeddings normalized during benchmark encoding;
+- batch size: 2;
+- timing boundaries синхронизированы через `torch.mps.synchronize()`;
+- throughput для оценки полного корпуса рассчитывается по end-to-end corpus-loop time.
+
+После исправления MPS timing выполнен отдельный `max_seq_length` benchmark:
+
+| `max_seq_length` | End-to-end docs/s | Estimated full corpus | Peak RSS |
+| ---: | ---: | ---: | ---: |
+| 512 | 12.98 | 205.36 h | 1.80 GiB |
+| 1024 | 11.88 | 224.50 h | 1.58 GiB |
+| 8192 (model default) | 11.85 | 224.90 h | 0.88 GiB |
+
+Для `max_seq_length=512` и model-default `8192` дополнительно выполнялись повторные 10k runs. Наблюдаемое преимущество `512` по throughput повторилось, однако committed benchmark artifacts содержат последние runs каждой конфигурации; абсолютная скорость и peak RSS между отдельными запусками варьировались.
+
+На текущем hardware полный corpus encoding остаётся вычислительно дорогим: даже для `max_seq_length=512` экстраполяция составляет около 205 часов (8.6 суток).
+
+Поэтому Stage A подтверждает техническую совместимость BGE-M3 с MPS и достаточный запас памяти, но вычислительное время остаётся основным ограничением.
+
+`max_seq_length=512` переносится в Stage B как основной efficiency candidate, однако **не считается frozen configuration**. Сокращение sequence length потенциально влияет на retrieval quality, поэтому окончательный выбор должен быть сделан только по `dev` ablation без использования `test`.
+
+`max_seq_length=1024` не показал практически значимого throughput advantage относительно model-default `8192`, поэтому отдельное дальнейшее quality-тестирование этого варианта не является приоритетным.
+
 ## Stage B — BGE-M3 dense on dev
 
 Если feasibility подтверждён:

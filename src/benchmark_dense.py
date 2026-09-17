@@ -35,11 +35,14 @@ class BenchmarkResult:
     max_docs: int
     processed_docs: int
     batch_size: int
+    max_seq_length: int
     embedding_dimension: int
     model_load_seconds: float
     encoding_seconds: float
+    corpus_loop_seconds: float
     total_seconds: float
-    documents_per_second: float
+    encoding_documents_per_second: float
+    end_to_end_documents_per_second: float
     estimated_full_corpus_seconds: float
     estimated_full_corpus_hours: float
     peak_rss_bytes: int
@@ -63,6 +66,12 @@ def choose_device(requested: str) -> str:
             "Запрошен MPS, но torch.backends.mps.is_available() вернул False."
         )
     return requested
+
+
+def synchronize_device(device: str) -> None:
+    """Synchronize asynchronous accelerator work before timing boundaries."""
+    if device == "mps":
+        torch.mps.synchronize()
 
 
 def iter_corpus_texts(path: Path, max_docs: int) -> Iterator[str]:
@@ -147,6 +156,15 @@ def parse_args() -> argparse.Namespace:
         default=MODEL_NAME,
         help=f"Hugging Face model id (по умолчанию: {MODEL_NAME})",
     )
+    parser.add_argument(
+        "--max-seq-length",
+        type=int,
+        default=None,
+        help=(
+            "ограничение длины входа модели; "
+            "по умолчанию используется model.max_seq_length"
+        ),
+    )
     return parser.parse_args()
 
 
@@ -156,6 +174,8 @@ def main() -> None:
         raise ValueError("--max-docs должен быть положительным целым числом")
     if args.batch_size <= 0:
         raise ValueError("--batch-size должен быть положительным целым числом")
+    if args.max_seq_length is not None and args.max_seq_length <= 0:
+        raise ValueError("--max-seq-length должен быть > 0")
 
     device = choose_device(args.device)
     print(f"Model:      {args.model}")
@@ -171,6 +191,9 @@ def main() -> None:
     load_start = time.perf_counter()
     model = SentenceTransformer(args.model, device=device)
     model_load_seconds = time.perf_counter() - load_start
+    if args.max_seq_length is not None:
+        model.max_seq_length = args.max_seq_length
+
     embedding_dimension = model.get_embedding_dimension()
     if embedding_dimension is None:
         raise RuntimeError("Не удалось определить размерность embeddings модели")
@@ -179,6 +202,7 @@ def main() -> None:
         f"Модель загружена за {model_load_seconds:.2f} с; "
         f"dimension={embedding_dimension}"
     )
+    print(f"Max seq length: {model.max_seq_length}")
 
     print("Warm-up...")
     model.encode(
@@ -188,13 +212,16 @@ def main() -> None:
         convert_to_numpy=True,
         show_progress_bar=False,
     )
+    synchronize_device(device)
 
     encoding_seconds = 0.0
     processed_docs = 0
     texts = iter_corpus_texts(CORPUS_PATH, args.max_docs)
     progress = tqdm(total=args.max_docs, unit="doc", desc="Dense encoding")
+    corpus_loop_start = time.perf_counter()
 
     for batch in batched(texts, args.batch_size):
+        synchronize_device(device)
         encode_start = time.perf_counter()
         embeddings = model.encode(
             batch,
@@ -203,6 +230,7 @@ def main() -> None:
             convert_to_numpy=True,
             show_progress_bar=False,
         )
+        synchronize_device(device)
         encoding_seconds += time.perf_counter() - encode_start
 
         if embeddings.ndim != 2 or embeddings.shape[1] != embedding_dimension:
@@ -214,7 +242,9 @@ def main() -> None:
         progress.update(len(batch))
         del embeddings
 
+    synchronize_device(device)
     progress.close()
+    corpus_loop_seconds = time.perf_counter() - corpus_loop_start
 
     if processed_docs == 0:
         raise RuntimeError("Из корпуса не было прочитано ни одного документа")
@@ -225,8 +255,9 @@ def main() -> None:
         )
 
     total_seconds = time.perf_counter() - total_start
-    documents_per_second = processed_docs / encoding_seconds
-    estimated_seconds = FULL_CORPUS_DOCUMENTS / documents_per_second
+    encoding_documents_per_second = processed_docs / encoding_seconds
+    end_to_end_documents_per_second = processed_docs / corpus_loop_seconds
+    estimated_seconds = FULL_CORPUS_DOCUMENTS / end_to_end_documents_per_second
     rss = peak_rss_bytes()
 
     result = BenchmarkResult(
@@ -235,11 +266,14 @@ def main() -> None:
         max_docs=args.max_docs,
         processed_docs=processed_docs,
         batch_size=args.batch_size,
+        max_seq_length=int(model.max_seq_length),
         embedding_dimension=embedding_dimension,
         model_load_seconds=model_load_seconds,
         encoding_seconds=encoding_seconds,
+        corpus_loop_seconds=corpus_loop_seconds,
         total_seconds=total_seconds,
-        documents_per_second=documents_per_second,
+        encoding_documents_per_second=encoding_documents_per_second,
+        end_to_end_documents_per_second=end_to_end_documents_per_second,
         estimated_full_corpus_seconds=estimated_seconds,
         estimated_full_corpus_hours=estimated_seconds / 3600,
         peak_rss_bytes=rss,
@@ -251,7 +285,8 @@ def main() -> None:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     safe_model_name = args.model.replace("/", "__")
     output_path = RESULTS_DIR / (
-        f"dense_benchmark_{safe_model_name}_{processed_docs}_batch{args.batch_size}.json"
+        f"dense_benchmark_{safe_model_name}_{processed_docs}"
+        f"_batch{args.batch_size}_seq{model.max_seq_length}.json"
     )
     output_path.write_text(
         json.dumps(asdict(result), ensure_ascii=False, indent=2) + "\n",
@@ -264,7 +299,9 @@ def main() -> None:
     print(f"Embedding dimension:   {embedding_dimension}")
     print(f"Model load:            {model_load_seconds:.2f} s")
     print(f"Encoding time:         {encoding_seconds:.2f} s")
-    print(f"Documents/sec:         {documents_per_second:.2f}")
+    print(f"Corpus loop time:      {corpus_loop_seconds:.2f} s")
+    print(f"Encoding docs/sec:     {encoding_documents_per_second:.2f}")
+    print(f"End-to-end docs/sec:   {end_to_end_documents_per_second:.2f}")
     print(f"Peak RAM (RSS):        {rss / 1024**3:.2f} GiB")
     print(
         "Estimated full corpus: "
