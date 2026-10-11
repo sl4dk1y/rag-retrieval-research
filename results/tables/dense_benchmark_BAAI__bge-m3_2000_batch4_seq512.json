@@ -1,0 +1,21 @@
+{
+  "model": "BAAI/bge-m3",
+  "device": "mps",
+  "max_docs": 2000,
+  "processed_docs": 2000,
+  "batch_size": 4,
+  "max_seq_length": 512,
+  "embedding_dimension": 1024,
+  "model_load_seconds": 9.56965300000229,
+  "encoding_seconds": 176.13673126999856,
+  "corpus_loop_seconds": 176.22056158399937,
+  "total_seconds": 186.10768829199878,
+  "encoding_documents_per_second": 11.354815009790412,
+  "end_to_end_documents_per_second": 11.349413382993088,
+  "estimated_full_corpus_seconds": 845638.7723423401,
+  "estimated_full_corpus_hours": 234.89965898398336,
+  "peak_rss_bytes": 955678720,
+  "peak_rss_gib": 0.890045166015625,
+  "torch_version": "2.13.0",
+  "mps_available": true
+}

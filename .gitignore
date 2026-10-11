@@ -20,6 +20,7 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+.venv-onnx/
 env/
 .pytest_cache/
 .mypy_cache/
@@ -41,3 +42,14 @@ __MACOSX/
 # Logs and temporary files
 *.log
 *.tmp
+.cache/
+
+# Local credentials and downloaded model artifacts
+.env
+.env.*
+!.env.example
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+*.onnx

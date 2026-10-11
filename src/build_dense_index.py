@@ -8,7 +8,9 @@ speed and 8-bit scalar quantization to keep the 9.6M-vector index manageable.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import os
+import re
 import resource
 import shutil
 import sys
@@ -23,6 +25,7 @@ from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
 from dense_utils import (
+    CORPUS_PATH,
     DEFAULT_BATCH_SIZE,
     DENSE_INDEX_DIR,
     FULL_CORPUS_DOCUMENTS,
@@ -41,6 +44,7 @@ SUCCESS_FILENAME = ".complete"
 
 DEFAULT_TRAIN_DOCS = 100_000
 DEFAULT_NLIST = 4096
+SHA256_PATTERN = re.compile(r"[0-9a-fA-F]{64}")
 
 
 def peak_rss_bytes() -> int:
@@ -56,8 +60,54 @@ def choose_device(requested: str) -> str:
     return requested
 
 
+def verify_corpus_sha256(corpus_path: Path, expected_digest: str | None) -> str | None:
+    """Verify an optional SHA-256 digest without loading the corpus into memory."""
+    if expected_digest is None:
+        return None
+    if SHA256_PATTERN.fullmatch(expected_digest) is None:
+        raise ValueError("--corpus-sha256 должен содержать ровно 64 hex-символа")
+
+    digest = hashlib.sha256()
+    with corpus_path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    actual_digest = digest.hexdigest()
+    if actual_digest.casefold() != expected_digest.casefold():
+        raise ValueError(
+            "SHA-256 корпуса не совпадает: "
+            f"expected={expected_digest.casefold()}, actual={actual_digest}"
+        )
+    return actual_digest
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--corpus-path",
+        type=Path,
+        default=CORPUS_PATH,
+        help=f"путь к JSONL.GZ-корпусу (по умолчанию: {CORPUS_PATH})",
+    )
+    parser.add_argument(
+        "--index-dir",
+        type=Path,
+        default=DENSE_INDEX_DIR,
+        help=f"каталог FAISS-индекса (по умолчанию: {DENSE_INDEX_DIR})",
+    )
+    parser.add_argument(
+        "--expected-document-count",
+        type=int,
+        default=FULL_CORPUS_DOCUMENTS,
+        help=(
+            "ожидаемое число документов полного выбранного корпуса; "
+            f"историческое значение: {FULL_CORPUS_DOCUMENTS:,}"
+        ),
+    )
+    parser.add_argument(
+        "--corpus-sha256",
+        default=None,
+        help="необязательный SHA-256 корпуса для metadata индекса",
+    )
     parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
     parser.add_argument("--device", choices=("auto", "mps", "cpu"), default="auto")
     parser.add_argument("--model", default=MODEL_NAME)
@@ -89,6 +139,7 @@ def complete(index_dir: Path) -> bool:
 def encode_training_sample(
     model: SentenceTransformer,
     *,
+    corpus_path: Path,
     train_docs: int,
     batch_size: int,
     dimension: int,
@@ -99,7 +150,7 @@ def encode_training_sample(
     encode_seconds = 0.0
     progress = tqdm(total=train_docs, unit="doc", desc="FAISS training sample")
 
-    for _docids, texts in batched_corpus(iter_corpus(), batch_size):
+    for _docids, texts in batched_corpus(iter_corpus(corpus_path), batch_size):
         remaining = train_docs - written
         if remaining <= 0:
             break
@@ -130,12 +181,24 @@ def encode_training_sample(
 
 def main() -> None:
     args = parse_args()
-    if args.batch_size <= 0 or args.train_docs <= 0 or args.nlist <= 0:
-        raise ValueError("batch-size/train-docs/nlist должны быть > 0")
+    if (
+        args.batch_size <= 0
+        or args.train_docs <= 0
+        or args.nlist <= 0
+        or args.expected_document_count <= 0
+    ):
+        raise ValueError(
+            "batch-size/train-docs/nlist/expected-document-count должны быть > 0"
+        )
     if args.max_docs is not None and args.max_docs <= 0:
         raise ValueError("--max-docs должен быть > 0")
+    if not args.corpus_path.is_file():
+        raise FileNotFoundError(f"Не найден корпус: {args.corpus_path}")
+    verified_corpus_sha256 = verify_corpus_sha256(
+        args.corpus_path, args.corpus_sha256
+    )
 
-    target_docs = args.max_docs or FULL_CORPUS_DOCUMENTS
+    target_docs = args.max_docs or args.expected_document_count
     train_docs = min(args.train_docs, target_docs)
     if train_docs < args.nlist * 10:
         raise ValueError(
@@ -145,9 +208,9 @@ def main() -> None:
 
     device = choose_device(args.device)
     index_dir = (
-        DENSE_INDEX_DIR
+        args.index_dir
         if args.max_docs is None
-        else DENSE_INDEX_DIR.parent / f"dense-e5-small-smoke-{args.max_docs}"
+        else args.index_dir.parent / f"{args.index_dir.name}-smoke-{args.max_docs}"
     )
 
     if complete(index_dir) and not args.force:
@@ -165,6 +228,7 @@ def main() -> None:
     print(f"Batch size:  {args.batch_size}")
     print(f"IVF nlist:   {args.nlist}")
     print(f"Train docs:  {train_docs:,}")
+    print(f"Corpus:      {args.corpus_path}")
     print(f"Index dir:   {index_dir}")
 
     total_start = time.perf_counter()
@@ -177,6 +241,7 @@ def main() -> None:
 
     training_vectors, training_encode_seconds = encode_training_sample(
         model,
+        corpus_path=args.corpus_path,
         train_docs=train_docs,
         batch_size=args.batch_size,
         dimension=int(dimension),
@@ -209,7 +274,9 @@ def main() -> None:
 
     try:
         with (temp_dir / DOCIDS_FILENAME).open("w", encoding="utf-8") as mapping:
-            for docids, texts in batched_corpus(iter_corpus(), args.batch_size):
+            for docids, texts in batched_corpus(
+                iter_corpus(args.corpus_path), args.batch_size
+            ):
                 remaining = target_docs - processed
                 if remaining <= 0:
                     break
@@ -265,12 +332,16 @@ def main() -> None:
         }
         metadata = {
             "model": args.model,
+            "corpus_path": str(args.corpus_path.resolve()),
+            "corpus_sha256": verified_corpus_sha256,
             "device": device,
             "batch_size": args.batch_size,
             "embedding_dimension": int(dimension),
             "normalized_embeddings": True,
             "document_prefix": "passage: ",
+            "query_prefix": "query: ",
             "document_count": processed,
+            "expected_document_count": args.expected_document_count,
             "is_subset": args.max_docs is not None,
             "max_docs": args.max_docs,
             "faiss_type": "IVFScalarQuantizer(SQ8, inner-product)",
@@ -284,6 +355,10 @@ def main() -> None:
         (temp_dir / SUCCESS_FILENAME).write_text("ok\n", encoding="utf-8")
 
         if index_dir.exists():
+            if not args.force:
+                raise FileExistsError(
+                    f"Каталог индекса появился во время построения: {index_dir}"
+                )
             shutil.rmtree(index_dir)
         os.replace(temp_dir, index_dir)
     except BaseException:

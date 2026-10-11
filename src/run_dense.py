@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import time
+from pathlib import Path
 
 import faiss
 import numpy as np
@@ -37,6 +38,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--nprobe", type=int, default=64)
     parser.add_argument("--device", choices=("auto", "mps", "cpu"), default="auto")
     parser.add_argument("--model", default=MODEL_NAME)
+    parser.add_argument(
+        "--index-dir",
+        type=Path,
+        default=DENSE_INDEX_DIR,
+        help=f"каталог FAISS-индекса (по умолчанию: {DENSE_INDEX_DIR})",
+    )
+    parser.add_argument(
+        "--run-path",
+        type=Path,
+        default=None,
+        help="точный путь для TREC run; по умолчанию используется исторический путь",
+    )
+    parser.add_argument(
+        "--timing-path",
+        type=Path,
+        default=None,
+        help="точный путь для JSON timing; по умолчанию используется исторический путь",
+    )
     return parser.parse_args()
 
 
@@ -46,13 +65,13 @@ def main() -> None:
         raise ValueError("top-k и nprobe должны быть > 0")
 
     for name in ("index.faiss", "docids.txt", "metadata.json", ".complete"):
-        if not (DENSE_INDEX_DIR / name).is_file():
+        if not (args.index_dir / name).is_file():
             raise FileNotFoundError(
-                f"Dense index незавершён: отсутствует {DENSE_INDEX_DIR / name}"
+                f"Dense index незавершён: отсутствует {args.index_dir / name}"
             )
 
     metadata = json.loads(
-        (DENSE_INDEX_DIR / "metadata.json").read_text(encoding="utf-8")
+        (args.index_dir / "metadata.json").read_text(encoding="utf-8")
     )
     if metadata.get("is_subset"):
         raise RuntimeError("Subset dense index нельзя использовать для финальной оценки")
@@ -63,12 +82,12 @@ def main() -> None:
 
     print("Загрузка FAISS index...")
     load_start = time.perf_counter()
-    index = faiss.read_index(str(DENSE_INDEX_DIR / "index.faiss"))
+    index = faiss.read_index(str(args.index_dir / "index.faiss"))
     index.nprobe = args.nprobe
     index_load_seconds = time.perf_counter() - load_start
 
     print("Загрузка docid mapping...")
-    docids = (DENSE_INDEX_DIR / "docids.txt").read_text(encoding="utf-8").splitlines()
+    docids = (args.index_dir / "docids.txt").read_text(encoding="utf-8").splitlines()
     if len(docids) != index.ntotal:
         raise RuntimeError(
             f"docids={len(docids):,}, index.ntotal={index.ntotal:,}"
@@ -98,8 +117,8 @@ def main() -> None:
     scores, positions = index.search(query_vectors, args.top_k)
     search_seconds = time.perf_counter() - search_start
 
-    RUNS_DIR.mkdir(parents=True, exist_ok=True)
-    run_path = RUNS_DIR / f"dense_e5_small_{args.split}.trec"
+    run_path = args.run_path or RUNS_DIR / f"dense_e5_small_{args.split}.trec"
+    run_path.parent.mkdir(parents=True, exist_ok=True)
     with run_path.open("w", encoding="utf-8") as stream:
         for query_index, query_id in enumerate(query_ids):
             for rank, (position, score) in enumerate(
@@ -125,7 +144,7 @@ def main() -> None:
         "search_seconds": search_seconds,
         "average_search_seconds_per_query": search_seconds / len(topics),
     }
-    timing_path = TABLES_DIR / f"dense_e5_small_{args.split}_timing.json"
+    timing_path = args.timing_path or TABLES_DIR / f"dense_e5_small_{args.split}_timing.json"
     write_json(timing_path, timing)
 
     print("\n=== Dense retrieval ===")

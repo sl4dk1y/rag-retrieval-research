@@ -1,0 +1,62 @@
+{
+  "actual_source_corpus_count": 9597504,
+  "corpus_jsonl_gz_sha256": "4537a2cc012121b92ecd06ed3c248519050a469db82831f9718220ebb84edca3",
+  "dev_relevant_document_coverage": {
+    "covered": 1332,
+    "fraction": 1.0,
+    "total": 1332
+  },
+  "expected_source_corpus_count": 9597504,
+  "final_output_count": 1000000,
+  "positive_dev_qrels_count": 1332,
+  "positive_test_qrels_count": 1100,
+  "protocol_version": "mr-tydi-russian-reduced-corpus-v1",
+  "random_seed": 42,
+  "randomly_selected_count": 630043,
+  "required_union_count": 369957,
+  "sampling": {
+    "algorithm": "Algorithm R reservoir sampling over eligible non-required docids",
+    "corpus_passes": 2,
+    "output_order": "original source-corpus order"
+  },
+  "selection_sources": {
+    "bm25_dev_top_100": {
+      "path": "results/runs/bm25_dev.trec",
+      "unique_docid_count": 123711
+    },
+    "bm25_test_top_100": {
+      "path": "results/runs/bm25_test.trec",
+      "unique_docid_count": 88692
+    },
+    "e5_dev_top_100": {
+      "path": "results/runs/dense_e5_small_dev_nprobe256.trec",
+      "unique_docid_count": 124865
+    },
+    "e5_test_top_100": {
+      "path": "results/runs/dense_e5_small_test_nprobe256.trec",
+      "unique_docid_count": 88963
+    },
+    "positive_dev_qrels": {
+      "path": "data/raw/mr-tydi-russian/ir-format-data/qrels.dev.txt",
+      "unique_docid_count": 1332
+    },
+    "positive_test_qrels": {
+      "path": "data/raw/mr-tydi-russian/ir-format-data/qrels.test.txt",
+      "unique_docid_count": 1100
+    }
+  },
+  "source_corpus_path": "data/raw/mr-tydi-russian/corpus.jsonl.gz",
+  "target_size": 1000000,
+  "test_relevant_document_coverage": {
+    "covered": 1100,
+    "fraction": 1.0,
+    "total": 1100
+  },
+  "top_k_per_run": 100,
+  "total_required_document_coverage": {
+    "covered": 369957,
+    "fraction": 1.0,
+    "total": 369957
+  },
+  "unique_output_docid_count": 1000000
+}

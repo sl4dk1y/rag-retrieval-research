@@ -1,0 +1,12 @@
+{
+  "metrics": {
+    "MRR@10": 0.6515454255404004,
+    "Recall@1": 0.47989949748743715,
+    "Recall@10": 0.8613065326633167,
+    "Recall@5": 0.8003350083752094,
+    "nDCG@10": 0.692025643506648
+  },
+  "query_count": 995,
+  "run": "results/reduced-1m/runs/dense_bge_m3_test.trec",
+  "split": "test"
+}
