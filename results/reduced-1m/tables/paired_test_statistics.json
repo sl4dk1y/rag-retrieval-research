@@ -1,0 +1,226 @@
+{
+  "bootstrap_ci_method": "Paired percentile bootstrap: resample query indices with replacement and take the 2.5th and 97.5th percentiles of mean(A - B).",
+  "bootstrap_iterations": 10000,
+  "comparisons": {
+    "bge_m3_bm25_rrf_vs_bge_m3": {
+      "method_a": "bge_m3_bm25_rrf",
+      "method_b": "bge_m3",
+      "metrics": {
+        "MRR@10": {
+          "ci_lower": -0.012689040440296721,
+          "ci_upper": 0.0018989291696578103,
+          "losses": 61,
+          "mean_a": 0.646243918002712,
+          "mean_b": 0.6515454255404003,
+          "method_a": "bge_m3_bm25_rrf",
+          "method_b": "bge_m3",
+          "observed_difference": -0.005301507537688443,
+          "p_value": 0.1533846615338466,
+          "ties": 878,
+          "wins": 56
+        },
+        "Recall@1": {
+          "ci_lower": -0.023785594639865997,
+          "ci_upper": 0.003350083752093802,
+          "losses": 31,
+          "mean_a": 0.46984924623115576,
+          "mean_b": 0.4798994974874372,
+          "method_a": "bge_m3_bm25_rrf",
+          "method_b": "bge_m3",
+          "observed_difference": -0.010050251256281407,
+          "p_value": 0.15708429157084292,
+          "ties": 943,
+          "wins": 21
+        },
+        "Recall@10": {
+          "ci_lower": 0.0,
+          "ci_upper": 0.0,
+          "losses": 0,
+          "mean_a": 0.8613065326633166,
+          "mean_b": 0.8613065326633166,
+          "method_a": "bge_m3_bm25_rrf",
+          "method_b": "bge_m3",
+          "observed_difference": 0.0,
+          "p_value": 1.0,
+          "ties": 995,
+          "wins": 0
+        },
+        "Recall@5": {
+          "ci_lower": -0.007537688442211055,
+          "ci_upper": 0.0020100502512562816,
+          "losses": 5,
+          "mean_a": 0.7978224455611389,
+          "mean_b": 0.8003350083752093,
+          "method_a": "bge_m3_bm25_rrf",
+          "method_b": "bge_m3",
+          "observed_difference": -0.002512562814070352,
+          "p_value": 0.41675832416758324,
+          "ties": 987,
+          "wins": 3
+        },
+        "nDCG@10": {
+          "ci_lower": -0.00913262012123699,
+          "ci_upper": 0.001148183638042668,
+          "losses": 68,
+          "mean_a": 0.6880752460342393,
+          "mean_b": 0.6920256435066479,
+          "method_a": "bge_m3_bm25_rrf",
+          "method_b": "bge_m3",
+          "observed_difference": -0.003950397472408663,
+          "p_value": 0.13508649135086492,
+          "ties": 863,
+          "wins": 64
+        }
+      }
+    },
+    "bge_m3_vs_e5": {
+      "method_a": "bge_m3",
+      "method_b": "e5",
+      "metrics": {
+        "MRR@10": {
+          "ci_lower": 0.032401950227327114,
+          "ci_upper": 0.07233233628459758,
+          "losses": 156,
+          "mean_a": 0.6515454255404003,
+          "mean_b": 0.5993890085347372,
+          "method_a": "bge_m3",
+          "method_b": "e5",
+          "observed_difference": 0.052156417005663244,
+          "p_value": 9.999000099990002e-05,
+          "ties": 561,
+          "wins": 278
+        },
+        "Recall@1": {
+          "ci_lower": 0.01540619765494141,
+          "ci_upper": 0.07001675041876047,
+          "losses": 86,
+          "mean_a": 0.4798994974874372,
+          "mean_b": 0.4375209380234506,
+          "method_a": "bge_m3",
+          "method_b": "e5",
+          "observed_difference": 0.0423785594639866,
+          "p_value": 0.0033996600339966003,
+          "ties": 774,
+          "wins": 135
+        },
+        "Recall@10": {
+          "ci_lower": 0.030318257956448907,
+          "ci_upper": 0.06700167504187604,
+          "losses": 32,
+          "mean_a": 0.8613065326633166,
+          "mean_b": 0.8130653266331658,
+          "method_a": "bge_m3",
+          "method_b": "e5",
+          "observed_difference": 0.04824120603015075,
+          "p_value": 9.999000099990002e-05,
+          "ties": 874,
+          "wins": 89
+        },
+        "Recall@5": {
+          "ci_lower": 0.03969849246231156,
+          "ci_upper": 0.08040201005025126,
+          "losses": 42,
+          "mean_a": 0.8003350083752093,
+          "mean_b": 0.7405360134003349,
+          "method_a": "bge_m3",
+          "method_b": "e5",
+          "observed_difference": 0.05979899497487437,
+          "p_value": 9.999000099990002e-05,
+          "ties": 842,
+          "wins": 111
+        },
+        "nDCG@10": {
+          "ci_lower": 0.03389957834483343,
+          "ci_upper": 0.06762998337173814,
+          "losses": 175,
+          "mean_a": 0.6920256435066479,
+          "mean_b": 0.6414577447323625,
+          "method_a": "bge_m3",
+          "method_b": "e5",
+          "observed_difference": 0.05056789877428544,
+          "p_value": 9.999000099990002e-05,
+          "ties": 516,
+          "wins": 304
+        }
+      }
+    },
+    "e5_bm25_rrf_vs_e5": {
+      "method_a": "e5_bm25_rrf",
+      "method_b": "e5",
+      "metrics": {
+        "MRR@10": {
+          "ci_lower": -0.008199339953736938,
+          "ci_upper": 0.005782603493658768,
+          "losses": 47,
+          "mean_a": 0.5981793890085347,
+          "mean_b": 0.5993890085347372,
+          "method_a": "e5_bm25_rrf",
+          "method_b": "e5",
+          "observed_difference": -0.0012096195262024409,
+          "p_value": 0.7443255674432556,
+          "ties": 890,
+          "wins": 58
+        },
+        "Recall@1": {
+          "ci_lower": -0.01742043551088777,
+          "ci_upper": 0.007537688442211055,
+          "losses": 26,
+          "mean_a": 0.43266331658291457,
+          "mean_b": 0.4375209380234506,
+          "method_a": "e5_bm25_rrf",
+          "method_b": "e5",
+          "observed_difference": -0.004857621440536013,
+          "p_value": 0.48465153484651535,
+          "ties": 948,
+          "wins": 21
+        },
+        "Recall@10": {
+          "ci_lower": -0.003015075376884422,
+          "ci_upper": 0.001507537688442211,
+          "losses": 1,
+          "mean_a": 0.8125628140703518,
+          "mean_b": 0.8130653266331658,
+          "method_a": "e5_bm25_rrf",
+          "method_b": "e5",
+          "observed_difference": -0.0005025125628140704,
+          "p_value": 1.0,
+          "ties": 993,
+          "wins": 1
+        },
+        "Recall@5": {
+          "ci_lower": -0.006532663316582915,
+          "ci_upper": 0.0010050251256281408,
+          "losses": 4,
+          "mean_a": 0.7380234505862646,
+          "mean_b": 0.7405360134003349,
+          "method_a": "e5_bm25_rrf",
+          "method_b": "e5",
+          "observed_difference": -0.002512562814070352,
+          "p_value": 0.31026897310268975,
+          "ties": 989,
+          "wins": 2
+        },
+        "nDCG@10": {
+          "ci_lower": -0.005574545316381702,
+          "ci_upper": 0.004269608532337287,
+          "losses": 55,
+          "mean_a": 0.6408061028226273,
+          "mean_b": 0.6414577447323625,
+          "method_a": "e5_bm25_rrf",
+          "method_b": "e5",
+          "observed_difference": -0.0006516419097352441,
+          "p_value": 0.8018198180181981,
+          "ties": 871,
+          "wins": 69
+        }
+      }
+    }
+  },
+  "confidence_level": 0.95,
+  "p_value_method": "Two-sided paired sign-flip randomization test: independently multiply each per-query A - B by -1 or +1 under H0, count null mean differences with abs(null_mean) >= abs(observed_mean) - 1e-15, and report (extreme_count + 1) / (iterations + 1).",
+  "query_count": 995,
+  "randomization_iterations": 10000,
+  "seed": 42,
+  "split": "test",
+  "wins_ties_losses_tolerance": 1e-12
+}

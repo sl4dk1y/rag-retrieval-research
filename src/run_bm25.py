@@ -176,12 +176,36 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--split", choices=SUPPORTED_SPLITS, default="dev")
     parser.add_argument("--top-k", type=int, default=100)
+    parser.add_argument(
+        "--index-dir",
+        type=Path,
+        default=INDEX_DIR,
+        help=f"каталог BM25-индекса (по умолчанию: {INDEX_DIR})",
+    )
+    parser.add_argument(
+        "--run-path",
+        type=Path,
+        default=None,
+        help="точный путь для TREC run; по умолчанию используется исторический путь",
+    )
+    parser.add_argument(
+        "--timing-path",
+        type=Path,
+        default=None,
+        help="точный путь для JSON timing; по умолчанию используется исторический путь",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    run_search(split=args.split, top_k=args.top_k)
+    run_search(
+        split=args.split,
+        top_k=args.top_k,
+        index_dir=args.index_dir,
+        run_path=args.run_path,
+        timing_path=args.timing_path,
+    )
 
 
 if __name__ == "__main__":

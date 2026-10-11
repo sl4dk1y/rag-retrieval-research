@@ -10,7 +10,7 @@ import shutil
 import sys
 import tempfile
 import zlib
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, TextIO
@@ -184,10 +184,12 @@ def load_qrels(path: Path) -> dict[str, dict[str, int]]:
     return qrels
 
 
-def referenced_relevant_docids() -> set[str]:
-    """Collect all positively relevant docids used by available Mr. TyDi qrels."""
+def referenced_relevant_docids(
+    splits: Iterable[str] = SUPPORTED_SPLITS,
+) -> set[str]:
+    """Collect positive qrels docids for the explicitly selected dataset splits."""
     docids: set[str] = set()
-    for split in SUPPORTED_SPLITS:
+    for split in splits:
         _topics_path, qrels_path = validate_split_files(split)
         qrels = load_qrels(qrels_path)
         docids.update(

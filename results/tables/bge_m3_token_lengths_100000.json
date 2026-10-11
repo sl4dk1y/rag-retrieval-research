@@ -1,0 +1,42 @@
+{
+  "model": "BAAI/bge-m3",
+  "text_format": "title + \" \" + text",
+  "add_special_tokens": true,
+  "processed_docs": 100000,
+  "max_docs": 100000,
+  "batch_size": 256,
+  "elapsed_seconds": 4.052989292002167,
+  "documents_per_second": 24673.14685418284,
+  "minimum_tokens": 4,
+  "maximum_tokens": 6116,
+  "mean_tokens": 111.66941,
+  "percentiles": {
+    "50": 86.0,
+    "90": 223.0,
+    "95": 290.0,
+    "99": 476.0,
+    "99.9": 955.0
+  },
+  "thresholds": {
+    "128": {
+      "documents_over": 30614,
+      "fraction_over": 0.30614
+    },
+    "256": {
+      "documents_over": 6986,
+      "fraction_over": 0.06986
+    },
+    "512": {
+      "documents_over": 766,
+      "fraction_over": 0.00766
+    },
+    "1024": {
+      "documents_over": 84,
+      "fraction_over": 0.00084
+    },
+    "8192": {
+      "documents_over": 0,
+      "fraction_over": 0.0
+    }
+  }
+}

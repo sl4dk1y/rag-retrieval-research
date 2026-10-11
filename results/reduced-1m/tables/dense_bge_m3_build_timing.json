@@ -1,0 +1,12 @@
+{
+  "corpus_encoding_seconds": 80853.37848945081,
+  "corpus_sha256_seconds": 0.09078470901295077,
+  "documents_per_second": 12.368066971134336,
+  "faiss_add_seconds": 240.59494950239605,
+  "faiss_train_seconds": 7.539143125002738,
+  "index_save_seconds": 10.746963375015184,
+  "model_load_seconds": 10.727950625005178,
+  "peak_rss_bytes": 1032224768,
+  "total_seconds": 91196.103506625,
+  "training_sample_encode_seconds": 9932.68460110198
+}

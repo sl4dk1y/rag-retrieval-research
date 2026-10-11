@@ -1,0 +1,12 @@
+{
+  "metrics": {
+    "MRR@10": 0.6002144300144304,
+    "Recall@1": 0.46763636363636363,
+    "Recall@10": 0.8581818181818182,
+    "Recall@5": 0.7716363636363637,
+    "nDCG@10": 0.6627849803251108
+  },
+  "query_count": 1375,
+  "run": "results/reduced-1m/runs/hybrid_bge_m3_rrf_dev.trec",
+  "split": "dev"
+}

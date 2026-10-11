@@ -1,0 +1,12 @@
+{
+  "metrics": {
+    "MRR@10": 0.1657546897546897,
+    "Recall@1": 0.11709090909090909,
+    "Recall@10": 0.2872727272727273,
+    "Recall@5": 0.23636363636363636,
+    "nDCG@10": 0.1945258120642715
+  },
+  "query_count": 1375,
+  "run": "results/reduced-1m/runs/bm25_dev.trec",
+  "split": "dev"
+}

@@ -1,0 +1,13 @@
+{
+  "average_search_seconds_per_query": 0.00484127935476077,
+  "device": "mps",
+  "index_load_seconds": 0.7496611249807756,
+  "model": "BAAI/bge-m3",
+  "model_load_seconds": 10.346088457998121,
+  "nprobe": 256,
+  "query_count": 995,
+  "query_encode_seconds": 7.746558540995466,
+  "search_seconds": 4.817072957986966,
+  "split": "test",
+  "top_k": 100
+}

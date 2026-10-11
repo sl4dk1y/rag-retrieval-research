@@ -1,0 +1,12 @@
+{
+  "metrics": {
+    "MRR@10": 0.5993890085347373,
+    "Recall@1": 0.4375209380234505,
+    "Recall@10": 0.8130653266331658,
+    "Recall@5": 0.7405360134003349,
+    "nDCG@10": 0.6414577447323627
+  },
+  "query_count": 995,
+  "run": "results/reduced-1m/runs/dense_e5_small_test.trec",
+  "split": "test"
+}

@@ -20,6 +20,7 @@ from data_utils import (
     DOCIDS_FILENAME,
     INDEX_DIR,
     METADATA_FILENAME,
+    SUPPORTED_SPLITS,
     STEMMER_LANGUAGE,
     SUCCESS_FILENAME,
     DataFormatError,
@@ -40,6 +41,7 @@ from data_utils import (
 BM25_METHOD = "lucene"
 BM25_K1 = 1.2
 BM25_B = 0.75
+REDUCED_CORPUS_QRELS_SPLITS = ("dev", "test")
 
 
 def peak_rss_bytes() -> int:
@@ -50,12 +52,19 @@ def peak_rss_bytes() -> int:
 
 
 def read_corpus(
-    corpus_path: Path, *, max_docs: int | None = None
+    corpus_path: Path,
+    *,
+    max_docs: int | None = None,
+    required_qrels_splits: tuple[str, ...] = SUPPORTED_SPLITS,
 ) -> tuple[list[str], list[str], float, float]:
     """Stream corpus records into the two arrays required for indexing."""
     texts: list[str] = []
     docids: list[str] = []
-    relevant_docids_not_seen = referenced_relevant_docids() if max_docs is None else None
+    relevant_docids_not_seen = (
+        referenced_relevant_docids(required_qrels_splits)
+        if max_docs is None
+        else None
+    )
     start = time.perf_counter()
 
     for record_number, record in enumerate(
@@ -113,18 +122,30 @@ def _write_docids(path: Path, docids: list[str]) -> None:
             stream.write("\n")
 
 
+def default_required_qrels_splits(corpus_path: Path) -> tuple[str, ...]:
+    """Keep full-corpus validation strict while making custom corpora DEV/TEST-safe."""
+    if corpus_path.resolve() == CORPUS_PATH.resolve():
+        return SUPPORTED_SPLITS
+    return REDUCED_CORPUS_QRELS_SPLITS
+
+
 def build_index(
     *,
     corpus_path: Path = CORPUS_PATH,
     index_dir: Path = INDEX_DIR,
     force: bool = False,
     max_docs: int | None = None,
+    required_qrels_splits: tuple[str, ...] | None = None,
 ) -> dict[str, Any]:
     """Build an index atomically, or reuse a completed one."""
     require_python_311()
     require_file(corpus_path, "корпус")
     if max_docs is not None and max_docs <= 0:
         raise ValueError("--max-docs должен быть положительным целым числом")
+    if required_qrels_splits is None:
+        required_qrels_splits = default_required_qrels_splits(corpus_path)
+    if not required_qrels_splits:
+        raise ValueError("Требуется хотя бы один split для проверки qrels")
     if max_docs is not None and index_dir == INDEX_DIR:
         index_dir = INDEX_DIR.parent / f"bm25-smoke-{max_docs}"
         print(f"Smoke-test: индекс будет сохранён отдельно в {index_dir}")
@@ -151,7 +172,9 @@ def build_index(
 
     total_start = time.perf_counter()
     texts, docids, corpus_read_seconds, docid_validation_seconds = read_corpus(
-        corpus_path, max_docs=max_docs
+        corpus_path,
+        max_docs=max_docs,
+        required_qrels_splits=required_qrels_splits,
     )
     print(f"Прочитано документов: {len(docids):,}")
 
@@ -211,6 +234,7 @@ def build_index(
             "format_version": 1,
             "is_subset": max_docs is not None,
             "max_docs": max_docs,
+            "required_qrels_splits": list(required_qrels_splits),
             "packages": {
                 "PyStemmer": importlib.metadata.version("PyStemmer"),
                 "bm25s": importlib.metadata.version("bm25s"),
@@ -256,6 +280,28 @@ def build_index(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        "--corpus-path",
+        type=Path,
+        default=CORPUS_PATH,
+        help=f"путь к JSONL.GZ-корпусу (по умолчанию: {CORPUS_PATH})",
+    )
+    parser.add_argument(
+        "--index-dir",
+        type=Path,
+        default=INDEX_DIR,
+        help=f"каталог BM25-индекса (по умолчанию: {INDEX_DIR})",
+    )
+    parser.add_argument(
+        "--required-qrels-splits",
+        choices=SUPPORTED_SPLITS,
+        nargs="+",
+        default=None,
+        help=(
+            "splits с положительными qrels, обязательными в корпусе; "
+            "по умолчанию raw corpus проверяет train/dev/test, иной corpus — dev/test"
+        ),
+    )
+    parser.add_argument(
         "--force", action="store_true", help="перестроить уже существующий индекс"
     )
     parser.add_argument(
@@ -272,7 +318,17 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    build_index(force=args.force, max_docs=args.max_docs)
+    build_index(
+        corpus_path=args.corpus_path,
+        index_dir=args.index_dir,
+        force=args.force,
+        max_docs=args.max_docs,
+        required_qrels_splits=(
+            tuple(args.required_qrels_splits)
+            if args.required_qrels_splits is not None
+            else None
+        ),
+    )
 
 
 if __name__ == "__main__":
