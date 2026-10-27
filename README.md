@@ -4,9 +4,9 @@
 
 Исторический эксперимент на полном корпусе завершён. Дополнительная проверка BGE-M3 на сокращённом корпусе также завершена; её результаты приведены отдельно ниже. В исходном эксперименте реализованы и сопоставлены:
 
-- **BM25** — классический разреженный лексический поиск;
-- **Dense Retrieval** — `intfloat/multilingual-e5-small` + FAISS;
-- **Hybrid Retrieval** — weighted Reciprocal Rank Fusion (RRF);
+- **BM25:** классический разреженный лексический поиск;
+- **Dense Retrieval:** `intfloat/multilingual-e5-small` + FAISS;
+- **Hybrid Retrieval:** weighted Reciprocal Rank Fusion (RRF);
 - ablation по `nprobe` для Dense Retrieval;
 - ablation по весу BM25 для Hybrid Retrieval;
 - независимая финальная оценка на `test`;
@@ -80,7 +80,7 @@
 - `nprobe = 256`;
 - top-100.
 
-Полный индекс занимает около **3.5 GB**. Peak RSS при его построении составлял около **3.74 GiB**, скорость кодирования полного корпуса — около **92.64 docs/s**.
+Полный индекс занимает около **3.5 GB**. При его построении пиковое потребление памяти (Peak RSS) составляло около **3.74 GiB**, а скорость кодирования корпуса достигала **92.64 docs/s**.
 
 ### Hybrid Retrieval
 
@@ -205,14 +205,14 @@ results/final/
 
 Основные артефакты:
 
-- `final_results.json` — агрегированные параметры и результаты;
+- `final_results.json`: агрегированные параметры и результаты;
 - `test_comparison.csv`;
 - `dev_comparison.csv`;
 - `dense_nprobe_ablation.csv`;
 - `hybrid_weight_ablation.csv`;
 - `latency_summary.csv`;
 - `error_analysis_summary.csv`;
-- `figures/` — PNG/PDF версии итоговых графиков.
+- `figures/`: итоговые графики в форматах PNG и PDF.
 
 Скрипты:
 
@@ -240,12 +240,11 @@ src/analyze_errors.py
 - [x] агрегирование итоговых результатов;
 - [x] итоговые таблицы;
 - [x] publication-ready figures.
-
-**Следующий этап — подготовка и написание исследовательской статьи.**
+- [x] подготовка, написание, проверка и отправка статьи.
 
 ## Completed modern retriever validation on the reduced collection
 
-Дополнительный эксперимент использовал **1 000 000 документов**, выбранных из исходных **9 597 504**. Пять методов — BM25, E5, E5 + BM25, BGE-M3 и BGE-M3 + BM25 — оценивались на одном фиксированном сокращённом корпусе. DEV содержит 1 375 запросов, TEST — 995. Полный протокол, конфигурации и DEV-таблица находятся в [документе эксперимента](docs/modern-retriever-validation-protocol.md); [переносимый manifest](data/reduced-1m-manifest.json) фиксирует выборку и SHA-256 корпуса.
+Дополнительный эксперимент охватил **1 000 000 документов** из исходных **9 597 504**. На одной фиксированной сокращённой коллекции оценили пять методов: BM25, E5, E5 + BM25, BGE-M3 и BGE-M3 + BM25. В DEV вошли 1 375 запросов, в TEST 995. Полный протокол, конфигурации и таблица DEV приведены в [описании эксперимента](docs/modern-retriever-validation-protocol.md). [Переносимый manifest](data/reduced-1m-manifest.json) фиксирует состав выборки и SHA-256 корпуса.
 
 | Reduced-corpus TEST method | Recall@1 | Recall@5 | Recall@10 | MRR@10 | nDCG@10 |
 | --- | ---: | ---: | ---: | ---: | ---: |
